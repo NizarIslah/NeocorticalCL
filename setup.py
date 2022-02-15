@@ -3,13 +3,12 @@
 from setuptools import setup, find_packages
 
 setup(
-    name='project',
+    name='NeoCL',
     version='0.0.0',
-    description='Describe Your Cool Project',
+    description='Neocortical Continual Learning',
     author='',
     author_email='',
-    # REPLACE WITH YOUR OWN GITHUB PROJECT LINK
-    url='https://github.com/PyTorchLightning/pytorch-lightning-conference-seed',
+    url='https://github.com/NizarIslah/NeocorticalCL',
     install_requires=['pytorch-lightning'],
     packages=find_packages(),
 )
