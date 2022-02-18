@@ -9,7 +9,7 @@ from avalanche.models.utils import avalanche_forward
 from avalanche.training.utils import copy_params_dict, zerolike_params_dict
 
 
-class CustomEWCPlugin(EWCPlugin):
+class SparseEWCPlugin(EWCPlugin):
     def before_backward(self, strategy, **kwargs):
         """
         Compute EWC penalty and add it to the loss.
@@ -26,16 +26,26 @@ class CustomEWCPlugin(EWCPlugin):
                         strategy.model.named_parameters(),
                         self.saved_params[experience],
                         self.importances[experience]):
-                    if cur_param.requires_grad and saved_param.requires_grad:
-                        penalty += (imp * (cur_param - saved_param).pow(2)).sum()
+                    if cur_param.requires_grad:
+                        if cur_param.size() != saved_param.size():
+                            saved_size = saved_param.size(0)
+                            temp = cur_param[:saved_size]
+                            penalty += (imp * (temp - saved_param).pow(2)).sum()
+                        else:
+                            penalty += (imp * (cur_param - saved_param).pow(2)).sum()
         elif self.mode == 'online':
             prev_exp = exp_counter - 1
             for (_, cur_param), (_, saved_param), (_, imp) in zip(
                     strategy.model.named_parameters(),
                     self.saved_params[prev_exp],
                     self.importances[prev_exp]):
-                if cur_param.requires_grad and saved_param.requires_grad:
-                    penalty += (imp * (cur_param - saved_param).pow(2)).sum()
+                if cur_param.requires_grad:
+                    if cur_param.size() != saved_param.size():
+                        saved_size = saved_param.size(0)
+                        temp = cur_param[:saved_size]
+                        penalty += (imp * (temp - saved_param).pow(2)).sum()
+                    else:
+                        penalty += (imp * (cur_param - saved_param).pow(2)).sum()
         else:
             raise ValueError('Wrong EWC mode.')
 

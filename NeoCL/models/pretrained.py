@@ -1,6 +1,19 @@
 import torch
+from torch import nn
 from avalanche.models import IncrementalClassifier
+from torch.nn import Linear, ReLU
 
+class SSLIcarl(nn.Module):
+    def __init__(self, pretrained_net, embedding_size, num_classes):
+        super(SSLIcarl, self).__init__()
+        self.feature_extractor = pretrained_net
+        # self.feature_extractor.freeze()
+        self.classifier = Linear(embedding_size, num_classes)
+
+    def forward(self, x):
+        x = self.feature_extractor(x)  # Already flattened
+        x = self.classifier(x)
+        return x
 
 class PretrainedIncrementalClassifier(IncrementalClassifier):
     """
@@ -18,9 +31,8 @@ class PretrainedIncrementalClassifier(IncrementalClassifier):
             dynamically expanded).
         """
         super().__init__(in_features)
-        self.encoder = pretrained_model
-        self.encoder.freeze()
-        self.classifier = torch.nn.Linear(in_features, initial_out_features)
+        self.feature_extractor = pretrained_model
+        self.classifier = Linear(in_features, initial_out_features)
 
     @torch.no_grad()
     def adaptation(self, dataset):
@@ -48,6 +60,6 @@ class PretrainedIncrementalClassifier(IncrementalClassifier):
         :param x:
         :return:
         """
-        with torch.no_grad():
-            z = self.encoder(x)
+        z = self.encoder(x)
+        z = self.pre_classifier(z)
         return self.classifier(z)
