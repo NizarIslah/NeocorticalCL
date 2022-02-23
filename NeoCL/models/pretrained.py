@@ -1,7 +1,8 @@
 import torch
 from torch import nn
 from avalanche.models import IncrementalClassifier
-from torch.nn import Linear, ReLU
+from torch.nn import Linear, ReLU, MultiheadAttention
+import clip
 
 class SSLIcarl(nn.Module):
     def __init__(self, pretrained_net, embedding_size, num_classes):
@@ -14,6 +15,25 @@ class SSLIcarl(nn.Module):
         x = self.feature_extractor(x)  # Already flattened
         x = self.classifier(x)
         return x
+    
+class CLIP_Attention(nn.Module):
+    def __init__(self, pretrained_net, preprocess, num_classes, num_heads, embed_dim=2048):
+        super(CLIP_Attention, self).__init__()
+        self.preprocess = preprocess
+        self.model = pretrained_net
+        self.attention = MultiheadAttention(embed_dim, num_heads)
+        self.classifier = Linear(embed_dim, num_classes)
+    
+    def forward(self, image, text):
+        image = self.preprocess(image)
+        text = clip.tokenize(text)
+        with torch.no_grad():
+            img_features = self.model.encode_image(image)
+            text_features = self.model.encode_text(text)
+            print(text_features.shape)
+        atn_out = self.attention(query=img_features, key=text_features, value=img_features)
+        logits = self.classifier(atn_out)
+        return logits
 
 class PretrainedIncrementalClassifier(IncrementalClassifier):
     """
