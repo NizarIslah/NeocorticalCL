@@ -10,3 +10,5 @@ lightning-bolts
 tqdm
 ipykernel
 pandas
+seaborn
+h5py
